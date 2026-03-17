@@ -1,0 +1,16 @@
+{
+  "manifest_version": 3,
+  "name": "Vibe Coding - BOJ Random Gacha",
+  "version": "1.0.0",
+  "description": "백준 랜덤 문제 생성기",
+  "permissions": [
+    "storage",
+    "tabs"
+  ],
+  "host_permissions": [
+    "*://*.solved.ac/*"
+  ],
+  "action": {
+    "default_popup": "popup.html"
+  }
+}

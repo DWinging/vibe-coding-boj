@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <link rel="stylesheet" href="css/popup.css">
+</head>
+<body>
+  <div class="header">
+    <span class="vibe-title">BOJ Random Picker 🎲</span>
+    <button id="settingsBtn">⚙️</button>
+  </div>
+
+  <div id="mainView" class="view">
+    <div class="tier-display">
+      <span id="tierText">P5 - P3</span>
+    </div>
+    <button id="drawBtn" class="btn-main">VIBE CHECK</button>
+  </div>
+
+  <div id="settingsView" class="view" style="display: none;">
+    <div class="setting-item">
+      <label>Min Tier: <span id="minVal">16</span></label>
+      <input type="range" id="minTier" min="1" max="30" value="16">
+    </div>
+    <div class="setting-item">
+      <label>Max Tier: <span id="maxVal">18</span></label>
+      <input type="range" id="maxTier" min="1" max="30" value="18">
+    </div>
+    <div class="back-area">
+      <button id="backBtn" class="btn-main" style="background: #444; color: white;">Save & Back</button>
+    </div>
+  </div>
+
+  <script type="module" src="js/popup.js"></script>
+</body>
+</html>
