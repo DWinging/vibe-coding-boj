@@ -1,0 +1,21 @@
+# OS 관련 파일
+.DS_Store
+Thumbs.db
+
+# 에디터 관련 (VS Code 등)
+.vscode/
+.idea/
+*.swp
+
+# 확장 프로그램 패키징 관련
+*.zip
+*.crx
+
+# 나중에 혹시 사용할 수도 있는 노드 모듈
+node_modules/
+package-lock.json
+
+# 로그 파일
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
