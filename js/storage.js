@@ -1,13 +1,12 @@
-export const VIBE_STORAGE_KEY = 'vibeSettings';
-
 export function saveSettings(settings) {
-  return chrome.storage.sync.set({ [VIBE_STORAGE_KEY]: settings });
+  // settings 객체에는 min, max, minRate가 들어옵니다.
+  return chrome.storage.sync.set(settings);
 }
 
-export function loadSettings() {
-  return new Promise((resolve) => {
-    chrome.storage.sync.get([VIBE_STORAGE_KEY], (data) => {
-      resolve(data[VIBE_STORAGE_KEY] || { min: 16, max: 18 });
-    });
+export async function loadSettings() {
+  return chrome.storage.sync.get({
+    min: 16,
+    max: 18,
+    minRate: 0
   });
 }

@@ -1,4 +1,4 @@
-/* 기본 초기화 */
+/* 1. 기본 초기화 및 폰트 설정 */
 * {
   box-sizing: border-box;
   margin: 0;
@@ -11,9 +11,10 @@ body {
   color: #e0e0e0;
   font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
   padding: 20px;
+  overflow: hidden;
 }
 
-/* 헤더 영역 */
+/* 2. 헤더 영역 */
 .header {
   position: relative;
   display: flex;
@@ -26,7 +27,7 @@ body {
   font-size: 1.4rem;
   font-weight: 800;
   letter-spacing: -0.5px;
-  color: #27e2a4; /* 포인트 컬러: 에메랄드 */
+  color: #27e2a4; /* 에메랄드 */
   text-shadow: 0 0 12px rgba(39, 226, 164, 0.3);
 }
 
@@ -43,33 +44,69 @@ body {
 
 #settingsBtn:hover {
   color: #fff;
-  transform: rotate(45deg); /* 설정 버튼 호버 시 회전 효과 */
+  transform: rotate(45deg);
 }
 
-/* 공통 뷰 레이아웃 */
+/* 3. 공통 뷰 레이아웃 */
 .view {
   display: flex;
   flex-direction: column;
   gap: 20px;
 }
 
-/* 티어 표시창 */
+/* 4. 티어 표시창 (Main View) */
+/* 티어 표시창 (Main View) - 규격 최적화 */
 .tier-display {
   background: #1e1e1e;
   border: 1px solid #333;
   border-radius: 12px;
-  padding: 20px;
+  padding: 24px 15px; /* 상하 패딩을 조금 더 줘서 안정감 확보 */
   text-align: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center; /* 내부 요소 수직 중앙 정렬 */
+  align-items: center;
+  min-height: 120px; /* 박스 최소 높이 고정으로 덜렁거림 방지 */
 }
 
 #tierText {
-  font-size: 1.6rem;
-  font-weight: 700;
+  font-size: 1.8rem; /* 글씨 크기 살짝 키움 */
+  font-weight: 800;
   color: #ffffff;
-  display: block;
+  line-height: 1.2; /* 행간 조절로 밀림 방지 */
+  margin-bottom: 8px; /* 하단 요약과의 간격 유지 */
+  letter-spacing: -0.5px;
 }
 
-/* 버튼 스타일 */
+#subSummary {
+  font-size: 0.85rem;
+  color: #888;
+  font-weight: 500;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* 헤더 타이틀 위치 보정 */
+.header {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 25px;
+  min-height: 32px; /* 헤더 높이 확보 */
+}
+
+.vibe-title {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 1.3rem; /* 살짝 조정 */
+  font-weight: 800;
+  color: #27e2a4;
+}
+/* 5. 버튼 스타일 */
 .btn-main {
   width: 100%;
   padding: 16px;
@@ -101,11 +138,11 @@ body {
   box-shadow: none;
 }
 
-/* 설정 아이템 */
+/* 6. 설정 아이템 레이아웃 */
 .setting-item {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
 }
 
 .setting-item label {
@@ -120,8 +157,56 @@ body {
   font-weight: bold;
 }
 
-/* 슬라이더(input range) 커스텀 */
-input[type="range"] {
+/* 7. 듀얼 슬라이더 (Tier Range) 핵심 스타일 */
+.multi-range-container {
+  position: relative;
+  width: 100%;
+  height: 24px;
+  display: flex;
+  align-items: center;
+}
+
+/* 배경 트랙 (움직이지 않는 선) */
+.slider-track {
+  position: absolute;
+  width: 100%;
+  height: 6px;
+  background: #333;
+  border-radius: 3px;
+  z-index: 1;
+}
+
+/* 겹쳐진 두 개의 인풋 공통 스타일 */
+.dual-input {
+  position: absolute;
+  width: 100%;
+  -webkit-appearance: none;
+  background: none;
+  pointer-events: none; /* 바 자체는 클릭 무시 (중요) */
+  outline: none;
+  z-index: 2;
+}
+
+/* 포인터(Thumb) - 실제 조작부 */
+.dual-input::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 20px;
+  height: 20px;
+  background: #27e2a4;
+  border-radius: 50%;
+  cursor: pointer;
+  pointer-events: auto; /* 포인터만 클릭 가능하게 복구 (중요) */
+  box-shadow: 0 0 10px rgba(39, 226, 164, 0.5);
+  border: 2px solid #1e1e1e; /* 배경과 구분감 */
+  transition: transform 0.1s ease;
+}
+
+.dual-input::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+}
+
+/* 8. 일반 슬라이더 (Min Rate 전용) */
+input[type="range"]:not(.dual-input) {
   -webkit-appearance: none;
   width: 100%;
   height: 6px;
@@ -130,22 +215,82 @@ input[type="range"] {
   outline: none;
 }
 
-input[type="range"]::-webkit-slider-thumb {
+input[type="range"]:not(.dual-input)::-webkit-slider-thumb {
   -webkit-appearance: none;
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   background: #27e2a4;
   border-radius: 50%;
   cursor: pointer;
-  box-shadow: 0 0 10px rgba(39, 226, 164, 0.5);
+  box-shadow: 0 0 10px rgba(39, 226, 164, 0.4);
+}
+
+/* 9. 하단 영역 */
+.back-area {
+  margin-top: 10px;
+}
+
+/* 기존 코드의 끝 부분에 추가 */
+.btn-micro { 
+  background: none; 
+  border: none; color: #27e2a4; 
+  cursor: pointer; font-size: 0.8rem; font-weight: bold; margin-left: 5px; }
+.btn-micro:hover { text-decoration: underline; }
+.preset-dropdown { width: 100%; padding: 12px; background: #1e1e1e; color: #fff; border: 1px solid #333; border-radius: 8px; outline: none; margin-top: 5px; cursor: pointer; }
+
+/* 프리셋 목록 상단 레이아웃 (라벨 + 수정 버튼) */
+.preset-header-wrap {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+#editPresetBtn {
+  background: none;
+  border: none;
+  color: var(--accent); /* 포인트 컬러(네온그린) 사용 */
+  cursor: pointer;
+  font-size: 0.85rem;
+  padding: 0;
+  text-decoration: underline;
   transition: 0.2s;
 }
 
-input[type="range"]::-webkit-slider-thumb:hover {
-  transform: scale(1.2);
+#editPresetBtn:hover {
+  opacity: 0.8;
 }
 
-/* 뒤로가기/저장 영역 */
-.back-area {
-  margin-top: 10px;
+/* ★ 화이트 드롭다운을 다크 테마로 개조 */
+#presetSelect {
+  width: 100%;
+  padding: 12px 16px;
+  background-color: #21262d; /* 다크 테마 배경 */
+  color: #f0f6fc; /* 밝은 텍스트 */
+  border: 1px solid #30363d;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-family: inherit;
+  cursor: pointer;
+  outline: none;
+  appearance: none; /* 기본 못생긴 화살표 숨기기 */
+  -webkit-appearance: none;
+  
+  /* 커스텀 화살표 아이콘 (SVG 삽입) */
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23adbac7' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  background-size: 16px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+#presetSelect:focus {
+  border-color: #27e2a4;
+  box-shadow: 0 0 0 2px rgba(39, 226, 164, 0.2);
+}
+
+/* 드롭다운 눌렀을 때 나오는 옵션 리스트들 */
+#presetSelect option {
+  background-color: #21262d;
+  color: #f0f6fc;
 }

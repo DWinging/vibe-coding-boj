@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>BOJ Sniper - 전문가 설정</title>
+  <link rel="stylesheet" href="css/options.css">
+</head>
+<body>
+  <div class="app-container">
+    
+    <header class="top-panel">
+      <div class="panel-main">
+        <div class="search-wrapper">
+          <input type="text" id="searchInput" placeholder="🔍 알고리즘 검색 (예: DP, 세그먼트 트리...)">
+        </div>
+        <div class="preset-builder">
+          <input type="text" id="presetName" placeholder="프리셋 이름 (예: 플래티넘 연습)">
+          <button id="savePresetBtn">저장</button>
+          <button id="resetBtn" title="선택 초기화">초기화</button>
+        </div>
+      </div>
+      
+      <div id="presetList" class="preset-chips"></div>
+    </header>
+
+    <main id="algoContainer" class="main-content">
+      </main>
+
+  </div>
+  <script type="module" src="js/options.js"></script>
+</body>
+</html>

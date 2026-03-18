@@ -1,16 +1,16 @@
 {
   "manifest_version": 3,
-  "name": "Vibe Coding - BOJ Random Gacha",
-  "version": "1.0.0",
-  "description": "백준 랜덤 문제 생성기",
-  "permissions": [
-    "storage",
-    "tabs"
-  ],
-  "host_permissions": [
-    "*://*.solved.ac/*"
-  ],
+  "name": "BOJ Random Picker",
+  "version": "2.1.0",
+  "description": "조건에 맞는 백준 문제를 랜덤하게 추출합니다.",
+  "permissions": ["storage", "tabs"],
+  "host_permissions": ["https://solved.ac/*"],
+  "options_page": "options.html",
   "action": {
-    "default_popup": "popup.html"
+    "default_popup": "popup.html",
+    "default_icon": "icons/icon.png"
+  },
+  "icons": {
+    "128": "icons/icon.png"
   }
 }

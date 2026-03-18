@@ -6,28 +6,45 @@
 </head>
 <body>
   <div class="header">
-    <span class="vibe-title">BOJ Random Picker 🎲</span>
+    <span class="vibe-title">BOJ Random Picker🎲</span>
     <button id="settingsBtn">⚙️</button>
   </div>
 
   <div id="mainView" class="view">
     <div class="tier-display">
       <span id="tierText">P5 - P3</span>
+      <div id="subSummary"></div>
     </div>
     <button id="drawBtn" class="btn-main">VIBE CHECK</button>
   </div>
 
   <div id="settingsView" class="view" style="display: none;">
     <div class="setting-item">
-      <label>Min Tier: <span id="minVal">16</span></label>
-      <input type="range" id="minTier" min="1" max="30" value="16">
+      <label>티어 범위: <span id="rangeText">P5 - P3</span></label>
+      <div class="multi-range-container">
+        <div class="slider-track"></div>
+        <input type="range" id="minTier" min="1" max="30" value="16" class="dual-input">
+        <input type="range" id="maxTier" min="1" max="30" value="18" class="dual-input">
+      </div>
     </div>
+    
     <div class="setting-item">
-      <label>Max Tier: <span id="maxVal">18</span></label>
-      <input type="range" id="maxTier" min="1" max="30" value="18">
+      <label>정답률: <span id="rateVal">0</span>%</label>
+      <input type="range" id="minRate" min="0" max="100" value="0">
     </div>
+
+    <div class="setting-item">
+      <div class="preset-header-wrap">
+        <label style="margin: 0; color: #adbac7; font-size: 0.9rem;">프리셋 목록</label>
+        <button id="editPresetBtn">수정</button>
+      </div>
+      <select id="presetSelect" class="preset-dropdown">
+        <option value="">적용 안 함 (전체)</option>
+      </select>
+    </div>
+
     <div class="back-area">
-      <button id="backBtn" class="btn-main" style="background: #444; color: white;">Save & Back</button>
+      <button id="backBtn" class="btn-main" style="background: #333; color: #fff;">저장 후 뒤로가기</button>
     </div>
   </div>
 
