@@ -103,17 +103,27 @@ async function init() {
 }
 
 /**
- * 실제 API 호출 및 필터링 로직 (500개 후보군 확보 버전)
+ * 배열을 무작위로 섞어주는 유틸리티 함수 (Fisher-Yates)
+ */
+function shuffleArray(array) {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+}
+
+/**
+ * 실제 API 호출 및 필터링 로직 (20페이지 수집 + 2000회 1차 방어 + 0회 리트라이)
  */
 async function fetchWithFallback(min, max, rate, tags) {
-  // 아이디 확인
   let { savedHandle } = await chrome.storage.local.get('savedHandle');
   if (!savedHandle) {
     savedHandle = await getMyHandle();
     if (savedHandle) await chrome.storage.local.set({ savedHandle });
   }
 
-  // 기본 쿼리 생성
   let baseQuery = `tier:${min}..${max}`;
   if (savedHandle) {
     baseQuery += ` -s@${savedHandle}`;
@@ -127,13 +137,12 @@ async function fetchWithFallback(min, max, rate, tags) {
   }
 
   let allCandidates = [];
-  const MAX_PAGES = 5; // 100개씩 5페이지 = 500개
+  // 🚨 그물망 4배 확대: 최대 20페이지(2000개) 긁어오기
+  const MAX_PAGES = 20; 
 
-  console.log("🎲 무작위 후보군 500개 수집 시작...");
+  console.log("🎲 무작위 후보군 최대 2000개 싹쓸이 수집 시작...");
 
-  // 기존 thresholds를 제거하고 5페이지를 순회하며 후보군 수집
   for (let page = 1; page <= MAX_PAGES; page++) {
-    // 공용 API 매너: 2페이지부터 0.2초씩 쉬어줌
     if (page > 1) await new Promise(resolve => setTimeout(resolve, 200));
 
     const url = `https://solved.ac/api/v3/search/problem?query=${encodeURIComponent(baseQuery)}&sort=random&page=${page}`;
@@ -149,8 +158,7 @@ async function fetchWithFallback(min, max, rate, tags) {
       const data = await res.json();
       if (data && data.items && data.items.length > 0) {
         allCandidates.push(...data.items);
-        // 만약 가져온 데이터가 100개 미만이면 다음 페이지가 없다는 뜻
-        if (data.items.length < 100) break;
+        if (data.items.length < 100) break; // 마지막 페이지면 탈출
       } else {
         break;
       }
@@ -162,7 +170,7 @@ async function fetchWithFallback(min, max, rate, tags) {
 
   if (allCandidates.length === 0) return [];
 
-  // 1. 정답률 필터링
+  // 1. 유저 설정 정답률 필터링
   let filtered = allCandidates;
   if (rate > 0) {
     filtered = allCandidates.filter(p => {
@@ -171,15 +179,26 @@ async function fetchWithFallback(min, max, rate, tags) {
     });
   }
 
-  // 2. Fisher-Yates Shuffle (가져온 후보군을 완전히 무작위로 섞음)
-  for (let i = filtered.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [filtered[i], filtered[j]] = [filtered[j], filtered[i]];
+  // 🚨 2. [절대 방어선] 제출 수 2000 이상 필터링
+  const getSubmissions = (p) => Math.round(p.acceptedUserCount * p.averageTries);
+  let strictPool = filtered.filter(p => getSubmissions(p) >= 2000);
+
+  console.log(`🛡️ 긁어온 ${filtered.length}개 후보 중 '제출 2000회 이상' 통과: ${strictPool.length}개`);
+
+  // 🚨 3. [리트라이 로직] 2000회 이상이 한 개도 없으면 0회 이상으로 재검색
+  if (strictPool.length === 0) {
+    console.warn("⚠️ 조건(제출 2000회 이상) 만족 문제가 없어, 제출 수 0회 이상으로 기준을 대폭 낮춰 재검색합니다.");
+    strictPool = filtered.filter(p => getSubmissions(p) >= 0);
+    console.log(`♻️ 기준 하향(0회 이상) 후 통과: ${strictPool.length}개`);
   }
 
-  // 3. 섞인 것 중 최종 100개만 반환
-  console.log(`✅ 총 ${filtered.length}개의 후보 중 100개를 캐시합니다.`);
-  return filtered.slice(0, 100);
+  // 4. 통과한 진짜배기들만 셔플해서 최대 100개 반환
+  if (strictPool.length === 0) {
+    console.warn("💀 뒤져봤지만 조건에 맞는 문제가 아예 없습니다.");
+    return []; // UI에서 "조건에 맞는 안 푼 문제가 없습니다" 띄우도록 빈 배열 반환
+  }
+
+  return shuffleArray(strictPool).slice(0, 100);
 }
 
 /**
@@ -198,22 +217,17 @@ UI.btns.draw.onclick = async () => {
     const { customPresets } = await chrome.storage.sync.get(['customPresets']);
     const tags = UI.inputs.preset.value ? (customPresets[UI.inputs.preset.value] || []) : [];
 
-    // 캐시 데이터 로드
     let { cachedProblems, currentIndex, lastCacheTime } = await chrome.storage.local.get(['cachedProblems', 'currentIndex', 'lastCacheTime']);
 
-    // 🚨 [핵심] 시간 기반 만료 체크 (2시간)
     const isExpired = !lastCacheTime || (now - lastCacheTime > CACHE_EXPIRE_TIME);
 
-    // 캐시가 없거나, 인덱스 초과했거나, 시간이 만료되었을 때 API 호출
     if (!cachedProblems || currentIndex >= cachedProblems.length || isExpired) {
-      
-      // 🚨 [신규 추가] 로그인 유도 체크 로직
       const handle = await getMyHandle();
       if (!handle) {
         const goLogin = confirm("로그인이 되어 있지 않아 '푼 문제'가 섞여 나올 수 있습니다.\n\nsolved.ac 로그인 페이지로 이동하시겠습니까?");
         if (goLogin) {
           chrome.tabs.create({ url: "https://solved.ac/login" });
-          return; // 로그인하러 이동 시 로직 중단
+          return;
         }
       }
 
@@ -227,18 +241,17 @@ UI.btns.draw.onclick = async () => {
       );
 
       if (!newProblems || newProblems.length === 0) {
-        if (newProblems !== null) alert("조건에 맞는 '안 푼 문제'가 없습니다.");
+        if (newProblems !== null) alert("조건에 맞는 '안 푼 문제'가 없습니다. 태그나 티어 범위를 넓혀보세요.");
         return;
       }
       
       cachedProblems = newProblems;
       currentIndex = 0;
-      lastCacheTime = now; // 갱신 시간 기록
+      lastCacheTime = now; 
     }
 
     const targetProblem = cachedProblems[currentIndex];
     
-    // 상태 저장
     await chrome.storage.local.set({ 
       cachedProblems, 
       currentIndex: currentIndex + 1,
@@ -274,7 +287,6 @@ UI.btns.back.onclick = async () => {
     minRate: Number(UI.inputs.rate.value)
   });
   await chrome.storage.sync.set({ lastPreset: UI.inputs.preset.value });
-  // 설정이 바뀌면 캐시 초기화 (다음 클릭 시 즉시 갱신됨)
   await clearCache();
   updateUI();
   UI.settings.style.display = 'none';
