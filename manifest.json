@@ -1,9 +1,9 @@
 {
   "manifest_version": 3,
   "name": "BOJ Random Picker",
-  "version": "2.1.11",
+  "version": "2.1.12",
   "description": "조건에 맞는 백준 문제를 랜덤하게 추출합니다.",
-  "permissions": ["storage", "activeTab", "cookies"],
+  "permissions": ["storage", "cookies"],
   "host_permissions": ["https://solved.ac/*"],
   "options_page": "options.html",
   "action": {

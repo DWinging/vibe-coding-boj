@@ -1,8 +1,24 @@
 /**
- * BOJ Random Picker - Core API Engine
- * Version: 2.1.0 (Submission Count Filter)
+ * BOJ Random Picker - Data Models & Constants
+ * Version: 2.1.12 (Architecture Refactored)
+ * Description: solved.ac API 쿼리에 사용될 핵심 알고리즘 태그(Tag) 데이터베이스입니다.
+ * 기존의 레거시(Legacy) API 호출 로직은 폐기 및 popup.js로 통합되었으며, 
+ * 현재 이 파일은 프리셋 UI 렌더링을 위한 '순수 데이터 저장소' 역할만 수행합니다. (관심사 분리)
  */
 
+/**
+ * @constant CATEGORIZED_TAGS
+ * @description 옵션 페이지(options.html)에 렌더링될 8대 카테고리별 알고리즘 태그 매핑 테이블.
+ * * [Data Structure]
+ * - category (Key) : UI에 표시될 대분류 카테고리명 (예: "자료 구조")
+ * - Array (Value)  : 해당 카테고리에 속한 세부 태그 객체들의 배열
+ * ㄴ key  : solved.ac 실제 API 검색 쿼리에 들어가는 영문 태그 ID (예: tag:data_structures)
+ * ㄴ name : 사용자 화면(체크박스 옆)에 노출될 한글 태그명
+ * * 💡 유지보수 팁: 
+ * 나중에 새로운 알고리즘(예: "모스 알고리즘")을 추가하고 싶다면, 
+ * HTML이나 JS의 렌더링 로직을 건드릴 필요 없이 오직 이 객체(CATEGORIZED_TAGS)에 데이터만 한 줄 추가하면 
+ * 옵션 창 UI에 자동으로 렌더링 및 동기화됩니다.
+ */
 export const CATEGORIZED_TAGS = {
   "자료 구조": [
     {key: "data_structures", name: "자료 구조"}, {key: "stack", name: "스택"}, {key: "queue", name: "큐"},
@@ -44,77 +60,3 @@ export const CATEGORIZED_TAGS = {
     {key: "sorting", name: "정렬"}, {key: "parametric_search", name: "매개 변수 탐색"}
   ]
 };
-
-const sleep = (ms) => new Promise(res => setTimeout(res, ms));
-
-export async function fetchRandomProblem(minTier, maxTier, minRate = 0, presetTags = []) {
-  // 1. 기본 쿼리 조립 (정답률/제출수 조건은 JS 필터링으로 뺌)
-  const baseQueryParts = [`tier:${minTier}..${maxTier}`, `lang:ko`];
-  
-  if (presetTags.length > 0) {
-    baseQueryParts.push(`(${presetTags.map(t => `tag:${t}`).join('|')})`);
-  }
-
-  let useUnsolvedFilter = true; 
-  let attempts = 0;
-  const MAX_SEARCH_BUNDLES = 5; // 필터링이 빡빡할 수 있으므로 최대 5번(250문제)까지 탐색 허용
-
-  while (attempts < MAX_SEARCH_BUNDLES) {
-    try {
-      const query = [...baseQueryParts];
-      if (useUnsolvedFilter) query.push(`!@$me`); // 안 푼 문제 필터
-      
-      const url = `https://solved.ac/api/v3/search/problem?query=${encodeURIComponent(query.join(' '))}&sort=random`;
-      
-      const response = await fetch(url, { credentials: 'include' });
-
-      // 비로그인 401 폴백
-      if (response.status === 401 && useUnsolvedFilter) {
-        console.log("비로그인 감지. 전체 문제 검색으로 전환합니다.");
-        useUnsolvedFilter = false;
-        continue; 
-      }
-
-      // API 밴 429 방어
-      if (response.status === 429) {
-        console.warn("API 429 에러. 1.5초 대기 후 재시도...");
-        await sleep(1500);
-        attempts++;
-        continue;
-      }
-
-      if (!response.ok) throw new Error(`API_ERR_${response.status}`);
-
-      const data = await response.json();
-      
-      if (!data.items || data.items.length === 0) return null;
-
-      // ★ 2. 클라이언트 자체 필터링 (정답률 + 제출 수) ★
-      for (const prob of data.items) {
-        const tries = prob.averageTries || 1;
-        const accepted = prob.acceptedUserCount || 0;
-        
-        // 제출 수 계산 (맞은 사람 수 * 평균 시도 횟수)
-        const totalSubmissions = Math.floor(accepted * tries); 
-        // 정답률 계산 (100 / 평균 시도 횟수)
-        const successRate = 100 / tries;
-
-        // 제출 수 2000 이상 AND 유저가 설정한 정답률 이상인 문제만 통과!
-        if (totalSubmissions >= 2000 && successRate >= minRate) {
-          console.log(`[스나이핑 성공] ID: ${prob.problemId}, 제출수: ${totalSubmissions}, 정답률: ${successRate.toFixed(1)}%`);
-          return prob.problemId;
-        }
-      }
-
-      attempts++;
-      await sleep(500);
-      
-    } catch (err) {
-      console.error("Fetch Error:", err);
-      attempts++;
-      await sleep(1000);
-    }
-  }
-  
-  return null;
-}
