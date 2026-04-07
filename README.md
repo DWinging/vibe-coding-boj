@@ -141,4 +141,5 @@ vibe-coding-boj/
 ## ✨ Bot Key Features
 * **완벽한 중복 방지 (Zero-Duplication)**: 서버단 API 호출 시 발생하는 랜덤 중복을 원천 차단하기 위해, 400일치의 검증된 문제를 미리 확보하여 순차 배포합니다.
 * **서버리스 무인 자동화 (Serverless Automation)**: GitHub Actions의 `cron` 스케줄러를 활용하여 별도의 서버 유지보수 비용 없이 매일 지정된 시간에 동작합니다.
-  ---
+  
+---
