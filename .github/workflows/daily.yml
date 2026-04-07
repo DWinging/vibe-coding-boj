@@ -2,9 +2,9 @@ name: Daily BOJ Recommendation
 
 on:
   schedule:
-    # 한국 시간(KST) 오전 9시는 UTC 기준으로 00:00입니다.
-    - cron: '5 15 * * *'
-  workflow_dispatch: # 필요할 때 수동으로 실행 버튼 누를 수 있게 함
+    # 한국 시간(KST) 오전 9시 (UTC 00:00), 월~금요일(1~5) 평일에만 실행
+    - cron: '0 0 * * 1-5'
+  workflow_dispatch: # 수동 실행 버튼
 
 jobs:
   send_message:
@@ -23,4 +23,4 @@ jobs:
         env:
           # GitHub Secrets에 등록한 웹훅 주소를 불러옴
           MATTERMOST_WEBHOOK_URL: ${{ secrets.MATTERMOST_WEBHOOK_URL }}
-        run: node alarm_bot/scripts/send-message.js 
+        run: node alarm_bot/scripts/send-message.js
