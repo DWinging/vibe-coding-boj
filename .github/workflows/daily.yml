@@ -23,4 +23,4 @@ jobs:
         env:
           # GitHub Secrets에 등록한 웹훅 주소를 불러옴
           MATTERMOST_WEBHOOK_URL: ${{ secrets.MATTERMOST_WEBHOOK_URL }}
-        run: node scripts/send-message.js
+        run: node alarm_bot/scripts/send-message.js
