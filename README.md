@@ -124,3 +124,21 @@ vibe-coding-boj/
 - **[Refactor]** 확장성을 고려한 모듈형 폴더 구조 설계 (`js/`, `css/` 분리)
 
 ---
+
+
+# 🤖 [Part 2] Daily Automated Alarm Bot (Mattermost)
+
+> **"매일 아침 9시, 엄선된 알고리즘 문제가 배달됩니다."**
+> 확장 프로그램의 철학을 확장하여, 팀원들과 함께 풀 알고리즘 문제를 비공개 메신저(Mattermost)로 자동 전송하는 무인 운영 시스템입니다.
+
+## ⚙️ Bot Architecture & Tech Stack
+- **Environment**: Node.js v20, GitHub Actions (Ubuntu-latest)
+- **Integration**: Mattermost Incoming Webhook
+- **Data Pipeline**: 
+  - Solved.ac API를 통해 정답자 수 기준(실버 3000명, 골드 2000명, 플레 500명 이상)의 고품질 문제만 사전 추출
+  - 추출된 데이터를 로컬에서 셔플하여 정적 JSON DB(실버, 골드 400문제, 플레 371문제) 구축
+
+## ✨ Bot Key Features
+* **완벽한 중복 방지 (Zero-Duplication)**: 서버단 API 호출 시 발생하는 랜덤 중복을 원천 차단하기 위해, 400일치의 검증된 문제를 미리 확보하여 순차 배포합니다.
+* **서버리스 무인 자동화 (Serverless Automation)**: GitHub Actions의 `cron` 스케줄러를 활용하여 별도의 서버 유지보수 비용 없이 매일 지정된 시간에 동작합니다.
+  ---
