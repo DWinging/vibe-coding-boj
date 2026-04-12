@@ -1,51 +1,75 @@
 const fs = require('fs');
 const path = require('path');
 
-// 환경 변수에서 Webhook URL 가져오기
 const WEBHOOK_URL = process.env.MATTERMOST_WEBHOOK_URL;
 
-// 오늘 날짜에 맞는 인덱스 구하기 (0 ~ 399)
-function getTodayIndex(totalCount) {
-    // 봇 가동 시작일을 오늘(2026-04-07)로 기준점 세팅!
-    const startDate = new Date("2026-04-07T00:00:00+09:00"); 
+function getKstInfo() {
+    // 기준일 세팅
+    const startDate = new Date("2026-01-01T00:00:00+09:00");
     const today = new Date();
     
-    // 한국 시간(KST) 기준으로 날짜 차이 계산
-    const diffInMs = today.setHours(0,0,0,0) - startDate.setHours(0,0,0,0);
+    // KST 보정
+    const utc = today.getTime() + (today.getTimezoneOffset() * 60 * 1000);
+    const kst = new Date(utc + (9 * 60 * 60 * 1000));
+
+    // YYYY-MM-DD 형식 문자열 생성 (JSON 비교용)
+    const year = kst.getFullYear();
+    const month = String(kst.getMonth() + 1).padStart(2, '0');
+    const date = String(kst.getDate()).padStart(2, '0');
+    const dateString = `${year}-${month}-${date}`;
+
+    const day = kst.getDay();
+    const diffInMs = kst.setHours(0,0,0,0) - startDate.setHours(0,0,0,0);
     const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
-    
-    return Math.abs(diffInDays) % totalCount;
+    const weekIdx = Math.floor(diffInDays / 7) % 55;
+
+    return { day, dateString, diffInDays, weekIdx };
 }
 
 async function sendMessage() {
     try {
         console.log("🚀 Mattermost 전송 봇 가동 준비 중...");
 
-        // JSON 파일 읽어오기
         const readData = (name) => JSON.parse(fs.readFileSync(path.join(__dirname, `../data/${name}`), 'utf8'));
-        
-        const silverList = readData('silver.json');
-        const goldList = readData('gold.json');
-        const platinumList = readData('platinum.json');
+        const { day, dateString, diffInDays, weekIdx } = getKstInfo();
 
-        // 추출한 데이터가 400개이므로 400 전달
-        const idx = getTodayIndex(400);
-        console.log(`- 오늘의 인덱스: ${idx}번 문제`);
+        // 1. 휴일 체크 (JSON 객체에서 키 존재 여부 확인)
+        const holidayData = readData('date/holidays.json'); 
 
-        const s = silverList[idx];
-        const g = goldList[idx];
-        const p = platinumList[idx];
+        // holidayData가 { "2026-01-01": "신정", ... } 형태이므로
+        // 해당 날짜(dateString)가 키로 존재하는지 확인합니다.
+        const isHoliday = Object.prototype.hasOwnProperty.call(holidayData, dateString);
 
-        // Mattermost 전송용 마크다운 페이로드 포맷
+        // 주말(0:일, 6:토)이거나 JSON 키에 등록된 공휴일인 경우 종료
+        if (day === 0 || day === 6 || isHoliday) {
+            const holidayName = isHoliday ? holidayData[dateString] : "주말";
+            console.log(`🚩 오늘은 쉼표가 필요한 날입니다. (${holidayName})`);
+            return;
+        }
+
+        // 2. 메시지 및 문제 리스트 로드
+        const quotesList = readData('message/quotes.json');
+        const silverList = readData('problem/silver.json');
+        const goldList = readData('problem/gold.json');
+        const platinumList = readData('problem/platinum.json');
+
+        const message = quotesList[day][weekIdx];
+        const pIdx = diffInDays % 400;
+
+        const s = silverList[pIdx];
+        const g = goldList[pIdx];
+        const p = platinumList[pIdx];
+
+        // 3. Payload 구성
         const payload = {
             text: `### 🤖 [BOJ Random Picker] 오늘의 추천 알고리즘!\n\n` +
                   `* 🥈 **실버** : [${s.titleKo} (${s.problemId})](https://www.acmicpc.net/problem/${s.problemId})\n` +
                   `* 🥇 **골드** : [${g.titleKo} (${g.problemId})](https://www.acmicpc.net/problem/${g.problemId})\n` +
                   `* 💎 **플레** : [${p.titleKo} (${p.problemId})](https://www.acmicpc.net/problem/${p.problemId})\n\n` +
-                  `> 오늘도 화이팅입니다! 🔥`
+                  `> ${message}`
         };
 
-        // Webhook으로 POST 요청 쏘기
+        // 4. 전송
         const res = await fetch(WEBHOOK_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -53,9 +77,9 @@ async function sendMessage() {
         });
 
         if (res.ok) {
-            console.log(`✅ [성공] Mattermost에 메시지가 꽂혔습니다! (응답: ${res.status})`);
+            console.log(`✅ [성공] Mattermost 메시지 전송 완료!`);
         } else {
-            console.error(`❌ [실패] 전송 에러: ${res.status}`);
+            console.error(`❌ [실패] HTTP 에러: ${res.status}`);
         }
 
     } catch (err) {
@@ -64,12 +88,9 @@ async function sendMessage() {
     }
 }
 
-// URL 세팅 여부 검증
 if (!WEBHOOK_URL) {
-    console.error("🚨 MATTERMOST_WEBHOOK_URL 환경 변수가 설정되지 않았습니다!");
-    console.error("테스트 전 터미널에 URL을 먼저 세팅해주세요.");
+    console.error("🚨 MATTERMOST_WEBHOOK_URL 환경 변수가 없습니다.");
     process.exit(1);
 }
 
-// 실행
 sendMessage();

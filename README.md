@@ -116,7 +116,7 @@ vibe-coding-boj/
 
 ---
 
-### v1.0.0 (2026-03-17) - "TBOJ Random Picker" 🎲
+### v1.0.0 (2026-03-17) - "BOJ Random Picker" 🎲
 - **[Core]** Solved.ac API 연동 및 랜덤 문제 추출 엔진 구현
 - **[Feature]** 티어 범위 설정 (Slider) 및 `chrome.storage` 연동
 - **[Feature]** 현재 활성화된 탭에서 즉시 문제 이동 (`chrome.tabs.update`)
