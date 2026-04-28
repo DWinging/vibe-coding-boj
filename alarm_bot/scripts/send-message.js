@@ -61,12 +61,21 @@ async function sendMessage() {
         const p = platinumList[pIdx];
 
         // 3. Payload 구성
+        // const payload = {
+        //     text: `### 🤖 [BOJ Random Picker] 오늘의 추천 알고리즘!\n\n` +
+        //           `* 🥈 **실버** : [${s.titleKo} (${s.problemId})](https://www.acmicpc.net/problem/${s.problemId})\n` +
+        //           `* 🥇 **골드** : [${g.titleKo} (${g.problemId})](https://www.acmicpc.net/problem/${g.problemId})\n` +
+        //           `* 💎 **플레** : [${p.titleKo} (${p.problemId})](https://www.acmicpc.net/problem/${p.problemId})\n\n` +
+        //           `> ${message}`
+        // };
+
         const payload = {
-            text: `### 🤖 [BOJ Random Picker] 오늘의 추천 알고리즘!\n\n` +
-                  `* 🥈 **실버** : [${s.titleKo} (${s.problemId})](https://www.acmicpc.net/problem/${s.problemId})\n` +
-                  `* 🥇 **골드** : [${g.titleKo} (${g.problemId})](https://www.acmicpc.net/problem/${g.problemId})\n` +
-                  `* 💎 **플레** : [${p.titleKo} (${p.problemId})](https://www.acmicpc.net/problem/${p.problemId})\n\n` +
-                  `> ${message}`
+            text: `### 🌅 안녕, 백준. 안녕, Random Picker\n\n` +
+                  `매일 아침 새로운 문제를 추천했던 우리의 봇이 오늘로 마침표를 찍습니다.\n\n` + 
+                  `2026년 4월 28일부로 BOJ 서비스가 종료됨에 따라 봇 서비스도 마무리를 준비합니다.\n` + 
+                  `남아있는 문제가 아직 많이 있지만, 아쉬움을 뒤로한채 마무리합니다.\n` + 
+                  `언젠가 다시 '맞았습니다!!'를 볼 수 있는 날, 더 나은 알고리즘으로 다시 만나기를 기약합니다.\n\n\n` +
+                  `> **p.s.** 이제 봇으로 어떤걸 해볼까요? 아이디어 추천 받습니다!` 
         };
 
         // 4. 전송
