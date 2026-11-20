@@ -6,9 +6,19 @@
  */
 
 import { CATEGORIZED_TAGS } from './api.js';
+import { buildQuery, MAX_ALGORITHM_TAGS, TAG_LIMIT_MESSAGE } from './protocol.js';
+const escapeHtml = value => String(value).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 // 메모리 상에서 구글 계정 동기화 데이터(customPresets)를 캐싱하는 로컬 상태 객체
 let presets = {};
+
+function updateSelectionState() {
+  const count = document.querySelectorAll('.tag-cb:checked').length;
+  document.querySelectorAll('.tag-cb').forEach(cb => {
+    cb.disabled = !cb.checked && count >= MAX_ALGORITHM_TAGS;
+    cb.title = cb.disabled ? TAG_LIMIT_MESSAGE : '';
+  });
+}
 
 /**
  * 앱 초기화 (Initialization)
@@ -29,7 +39,7 @@ async function init() {
 /**
  * 알고리즘 태그 UI 동적 렌더링 및 체크박스 상태 동기화
  * - api.js의 CATEGORIZED_TAGS 데이터를 순회하며 HTML 문자열을 조립(템플릿 리터럴)하여 삽입.
- * - '전체 선택' 체크박스와 '개별 태그' 체크박스 간의 양방향 상태 연동을 처리.
+ * - 선택한 항목을 해제할 수 있도록 유지하며, 5개 선택 시 나머지 항목을 잠급니다.
  */
 function renderCategorizedTags() {
   const container = document.getElementById('algoContainer');
@@ -41,9 +51,6 @@ function renderCategorizedTags() {
       <div class="category-section">
         <div class="category-header">
           <h3 class="category-title">${category}</h3>
-          <label class="select-all-label">
-            <input type="checkbox" class="select-all-cb"> 전체 선택
-          </label>
         </div>
         <div class="tags-grid">
           ${tags.map(tag => `
@@ -58,31 +65,16 @@ function renderCategorizedTags() {
   }
   container.innerHTML = html;
 
-  // 2. DOM 삽입 후 체크박스 이벤트 바인딩 (동기화 로직)
-  document.querySelectorAll('.category-section').forEach(section => {
-    const allCb = section.querySelector('.select-all-cb');
-    const tagCbs = Array.from(section.querySelectorAll('.tag-cb'));
-
-    // [전체 선택 -> 개별 태그] 액션
-    allCb.onclick = () => {
-      tagCbs.forEach(cb => {
-        // 검색 필터링으로 인해 숨겨진(display: none) 태그는 상태 변경에서 제외 (UX 보호)
-        if (cb.closest('.tag-card').style.display !== 'none') {
-          cb.checked = allCb.checked;
-        }
-      });
+  document.querySelectorAll('.tag-cb').forEach(cb => {
+    cb.onchange = () => {
+      if (cb.checked && document.querySelectorAll('.tag-cb:checked').length > MAX_ALGORITHM_TAGS) {
+        cb.checked = false;
+        alert(TAG_LIMIT_MESSAGE);
+      }
+      updateSelectionState();
     };
-
-    // [개별 태그 -> 전체 선택] 액션: 하위 요소가 모두 선택되었는지 검사하여 상위 체크박스 토글
-    tagCbs.forEach(cb => {
-      cb.onchange = () => {
-        const visibleCbs = tagCbs.filter(c => c.closest('.tag-card').style.display !== 'none');
-        const checkedVisible = visibleCbs.filter(c => c.checked);
-        // 화면에 보이는 모든 태그가 체크되었을 때만 '전체 선택' 활성화
-        allCb.checked = (visibleCbs.length > 0 && visibleCbs.length === checkedVisible.length);
-      };
-    });
   });
+  updateSelectionState();
 }
 
 /**
@@ -104,10 +96,6 @@ document.getElementById('searchInput').addEventListener('input', (e) => {
     // 일치하는 태그가 없는 카테고리는 섹션 통째로 숨김
     section.style.display = hasVisible ? 'block' : 'none';
     
-    // 검색 결과가 변동됨에 따라 '전체 선택' 체크박스 상태 재평가
-    const allCb = section.querySelector('.select-all-cb');
-    const visibleCbs = Array.from(section.querySelectorAll('.tag-cb')).filter(c => c.closest('.tag-card').style.display !== 'none');
-    allCb.checked = (visibleCbs.length > 0 && visibleCbs.filter(c => c.checked).length === visibleCbs.length);
   });
 });
 
@@ -129,7 +117,8 @@ document.getElementById('presetName').addEventListener('keydown', (e) => {
 document.getElementById('resetBtn').onclick = () => {
   document.getElementById('presetName').value = "";
   document.getElementById('searchInput').value = "";
-  document.querySelectorAll('.tag-cb, .select-all-cb').forEach(cb => cb.checked = false);
+  document.querySelectorAll('.tag-cb').forEach(cb => cb.checked = false);
+  updateSelectionState();
   document.getElementById('searchInput').dispatchEvent(new Event('input'));
 };
 
@@ -142,6 +131,8 @@ document.getElementById('savePresetBtn').onclick = async () => {
   const name = nameInput.value.trim();
   // 선택된 체크박스의 value(태그 영문 키값)만 추출하여 배열로 생성
   const selected = Array.from(document.querySelectorAll('.tag-cb:checked')).map(cb => cb.value);
+  try { buildQuery({ min: 1, max: 30, tags: selected }, 'x'); }
+  catch (error) { return alert(error.message); }
 
   // Validation: 이름이 비었거나 선택된 태그가 없을 경우 방어
   if (!name || selected.length === 0) {
@@ -172,15 +163,15 @@ function renderPresetList() {
   
   // Empty State 처리
   if (keys.length === 0) {
-    list.innerHTML = "<div style='color:#666; font-size:0.9rem; padding: 10px 0;'>저장된 프리셋이 없습니다.</div>";
+    list.innerHTML = "<div style='color:var(--text-muted); font-size:0.9rem; padding: 10px 0;'>저장된 프리셋이 없습니다.</div>";
     return;
   }
 
   list.innerHTML = keys.map(name => `
-    <div class="preset-chip preset-load-trigger" data-name="${name}">
-      <span>${name}</span>
+    <div class="preset-chip preset-load-trigger" data-name="${escapeHtml(name)}">
+      <span>${escapeHtml(name)}</span>
       <span class="p-count">${presets[name].length}</span>
-      <button class="del-btn" data-name="${name}">×</button>
+      <button class="del-btn" data-name="${escapeHtml(name)}">×</button>
     </div>
   `).join('');
 
@@ -222,11 +213,8 @@ function attachListEvents() {
         cb.checked = targetTags.includes(cb.value);
       });
 
-      // 개별 체크박스 변동에 맞춰 카테고리별 '전체 선택' 상태 재계산 (무결성 유지)
-      document.querySelectorAll('.category-section').forEach(section => {
-        const tagCbs = Array.from(section.querySelectorAll('.tag-cb'));
-        section.querySelector('.select-all-cb').checked = (tagCbs.length > 0 && tagCbs.every(c => c.checked));
-      });
+      updateSelectionState();
+      if (targetTags.length > MAX_ALGORITHM_TAGS) alert(TAG_LIMIT_MESSAGE);
     };
   });
 }

@@ -1,0 +1,28 @@
+{
+  "name": "boj-random-picker-api",
+  "main": "index.js",
+  "compatibility_date": "2026-11-20",
+  "workers_dev": true,
+  "vars": {
+    "EXTENSION_IDS": "ijfpnmabjoobcklmokacphodhmechhdk,chbfbmgdfjoabckohpopnmhcagchcpem"
+  },
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "BUDGET",
+        "class_name": "ApiBudget"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": [
+        "ApiBudget"
+      ]
+    }
+  ],
+  "observability": {
+    "enabled": false
+  }
+}

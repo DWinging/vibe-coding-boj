@@ -1,323 +1,98 @@
-/* * BOJ Random Picker - Popup Main Styles
- * Theme: Deep Dark & Emerald Accent
- * Architecture: Chrome Extension Popup 환경에 맞춘 고정 크기 및 Layout Shift 방지 설계
- */
-
-/* 1. 기본 초기화 및 폰트 설정 */
-* {
-  box-sizing: border-box; /* 패딩과 테두리를 요소의 전체 너비/높이에 포함 */
-  margin: 0;
-  padding: 0;
+:root {
+  color-scheme: dark;
+  --background: #0d1117;
+  --surface: #161b22;
+  --input: #21262d;
+  --text: #f0f6fc;
+  --muted: #a4afbd;
+  --border: #30363d;
+  --accent: #27e2a4;
+  --connected: #27e2a4;
 }
-
+* { box-sizing: border-box; margin: 0; padding: 0; }
+[hidden] { display: none !important; }
 body {
-  width: 320px;           /* 크롬 확장프로그램 팝업 창의 고정 너비 (일관된 UX 제공) */
-  background-color: #121212; /* 눈의 피로를 최소화하는 딥 다크 배경 */
-  color: #e0e0e0;
-  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
-  padding: 20px;
-  overflow: hidden;       /* 좁은 팝업창에서 불필요한 스크롤바가 생기는 현상 원천 차단 */
+  width: 320px;
+  padding: 16px 16px 18px;
+  background: var(--background);
+  color: var(--text);
+  font: 13px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", "Malgun Gothic", sans-serif;
 }
-
-/* 2. 헤더 영역 (타이틀 및 설정 아이콘) */
-.header {
-  position: relative;     /* 우측 설정 버튼을 absolute로 배치하기 위한 기준점 */
-  display: flex;
-  justify-content: center; /* 타이틀을 항상 중앙에 배치 */
-  align-items: center;
-  margin-bottom: 25px;
+button, select, input { font: inherit; }
+button { cursor: pointer; }
+button, select { transition: background-color .15s, border-color .15s, color .15s; }
+button:focus-visible, select:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
 }
-
-.vibe-title {
-  font-size: 1.4rem;
-  font-weight: 800;
-  letter-spacing: -0.5px;
-  color: #27e2a4;         /* 메인 브랜드 컬러 (에메랄드/민트) */
-  text-shadow: 0 0 12px rgba(39, 226, 164, 0.3); /* 네온사인 느낌의 은은한 글로우 효과 */
-}
-
-/* 설정(톱니바퀴) 버튼 */
-#settingsBtn {
-  position: absolute;     /* 헤더 내에서 우측 끝에 고정 (타이틀 중앙 정렬에 영향 주지 않음) */
-  right: 0;
-  background: none;
-  border: none;
-  font-size: 1.2rem;
-  cursor: pointer;
-  color: #666;
-  transition: transform 0.3s ease, color 0.2s; /* 부드러운 회전 및 색상 전환 효과 */
-}
-
-#settingsBtn:hover {
-  color: #fff;
-  transform: rotate(45deg); /* 호버 시 톱니바퀴가 돌아가는 듯한 직관적 피드백 */
-}
-
-/* 3. 공통 뷰 레이아웃 (Main View & Settings View 공통 적용) */
-.view {
-  display: flex;
-  flex-direction: column; /* 내부 요소들을 수직으로 차곡차곡 배치 */
-  gap: 20px;              /* 요소 간 일관된 여백 유지 */
-}
-
-/* 4. 티어 표시창 (Main View) - 규격 최적화 */
-.tier-display {
-  background: #1e1e1e;
-  border: 1px solid #333;
-  border-radius: 12px;
-  padding: 24px 15px;     /* 상하 패딩을 넉넉히 주어 안정감 확보 */
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-  justify-content: center; /* 내부 텍스트 수직 중앙 정렬 */
-  align-items: center;
-  min-height: 120px;      /* ★ 핵심: 글자가 바뀌어도 박스 높이가 변해 UI가 덜렁거리는 현상(Layout Shift) 방지 */
-}
-
-#tierText {
-  font-size: 1.8rem;      /* 핵심 정보이므로 가장 크게 시각적 강조 */
-  font-weight: 800;
-  color: #ffffff;
-  line-height: 1.2;       /* 행간 조절로 텍스트가 아래로 밀리는 현상 방지 */
-  margin-bottom: 8px;     /* 하단 요약 텍스트와의 시각적 분리 */
-  letter-spacing: -0.5px;
-}
-
-#subSummary {
-  font-size: 0.85rem;
-  color: #888;
-  font-weight: 500;
-  line-height: 1;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-/* 헤더 타이틀 위치 보정 (중복/확장 선언부) */
-.header {
-  position: relative;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  margin-bottom: 25px;
-  min-height: 32px;       /* 톱니바퀴 아이콘과 높이를 맞춰 레이아웃 붕괴 방지 */
-}
-
-.vibe-title {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 1.3rem;      /* 좁은 팝업 너비에 맞춘 살짝 조정된 타이틀 크기 */
-  font-weight: 800;
-  color: #27e2a4;
-}
-
-/* 5. 버튼 스타일 (Draw, Save 등 메인 액션 버튼) */
-.btn-main {
-  width: 100%;
-  padding: 16px;
-  background: #27e2a4;
-  color: #121212;         /* 밝은 배경에 대비되는 강렬한 다크 텍스트 */
-  border: none;
-  border-radius: 12px;
-  font-size: 1rem;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.btn-main:hover {
-  background: #1fd195;
-  transform: translateY(-2px); /* 클릭 유도를 위한 미세한 부상 효과 */
-  box-shadow: 0 5px 15px rgba(31, 209, 149, 0.4);
-}
-
-.btn-main:active {
-  transform: translateY(0);    /* 클릭하는 순간 물리적 버튼을 누르는 듯한 눌림 효과 */
-}
-
-.btn-main:disabled {
-  background: #333;
-  color: #666;
-  cursor: not-allowed;
-  transform: none;
-  box-shadow: none;       /* 비활성화 시 사용자가 클릭하지 않도록 모든 시각적 유도 제거 */
-}
-
-/* 6. 설정 아이템 레이아웃 (슬라이더, 드롭다운 등을 감싸는 래퍼) */
-.setting-item {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.setting-item label {
-  font-size: 0.9rem;
-  color: #aaa;
-  display: flex;
-  justify-content: space-between; /* "최소 티어" 텍스트는 좌측, "Gold V" 값은 우측 끝으로 양극 배치 */
-}
-
-.setting-item label span {
-  color: #27e2a4;         /* 현재 선택된 값을 브랜드 컬러로 강조 */
-  font-weight: bold;
-}
-
-/* 7. 듀얼 슬라이더 (Tier Range) 핵심 스타일 
-   - 2개의 range input을 겹쳐서 하나의 범위 선택기처럼 보이게 만드는 트릭
-*/
-.multi-range-container {
-  position: relative;     /* 내부 absolute 요소들의 캔버스 역할 */
-  width: 100%;
-  height: 24px;
+.header, .brand, .section-heading, .account-area, .account-identity {
   display: flex;
   align-items: center;
 }
-
-/* 배경 트랙 (움직이지 않는 선) */
-.slider-track {
-  position: absolute;
-  width: 100%;
-  height: 6px;
-  background: #333;
-  border-radius: 3px;
-  z-index: 1;             /* 가장 바닥에 위치 */
+.header { justify-content: space-between; gap: 8px; margin-bottom: 14px; height: 28px; }
+.brand { gap: 8px; min-width: 0; }
+.brand-logo { width: 22px; height: 22px; color: var(--accent); flex-shrink: 0; }
+h1 { font-size: 15px; font-weight: 650; letter-spacing: -.3px; white-space: nowrap; }
+.icon-button {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  color: var(--muted);
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
 }
-
-/* 겹쳐진 두 개의 인풋 공통 스타일 */
-.dual-input {
-  position: absolute;
-  width: 100%;
-  -webkit-appearance: none; /* 브라우저 기본 슬라이더 UI 제거 */
-  background: none;       /* 배경을 투명하게 하여 아래 track이 보이게 함 */
-  pointer-events: none;   /* ★ 핵심: 트랙 자체의 클릭을 무시하게 하여 두 슬라이더가 서로의 이벤트를 막지 않게 함 */
-  outline: none;
-  z-index: 2;             /* 배경 트랙보다 위에 위치 */
-}
-
-/* 포인터(Thumb) - 실제 조작부 */
-.dual-input::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  width: 20px;
-  height: 20px;
-  background: #27e2a4;
-  border-radius: 50%;
-  cursor: pointer;
-  pointer-events: auto;   /* ★ 핵심: 전체 이벤트는 무시하되, 이 동그란 손잡이(Thumb)만 클릭/드래그 가능하게 복구 */
-  box-shadow: 0 0 10px rgba(39, 226, 164, 0.5);
-  border: 2px solid #1e1e1e; /* 엄지가 서로 겹쳤을 때 구분되도록 팝업 배경색과 동일한 테두리 부여 */
-  transition: transform 0.1s ease;
-}
-
-.dual-input::-webkit-slider-thumb:hover {
-  transform: scale(1.15); /* 마우스가 닿으면 조작 가능함을 알리기 위해 크기 확대 */
-}
-
-/* 8. 일반 슬라이더 (Min Rate 전용, 싱글 슬라이더) */
-input[type="range"]:not(.dual-input) {
-  -webkit-appearance: none;
-  width: 100%;
-  height: 6px;
-  background: #333;
-  border-radius: 3px;
-  outline: none;
-}
-
-input[type="range"]:not(.dual-input)::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  width: 20px;
-  height: 20px;
-  background: #27e2a4;
-  border-radius: 50%;
-  cursor: pointer;
-  box-shadow: 0 0 10px rgba(39, 226, 164, 0.4);
-}
-
-/* 9. 하단 영역 (뒤로가기 등) */
-.back-area {
-  margin-top: 10px;       /* 팝업 하단 여백 확보 */
-}
-
-/* 기존 코드의 끝 부분에 추가된 마이크로 및 드롭다운 UI */
-.btn-micro { 
-  background: none; 
-  border: none; 
-  color: #27e2a4; 
-  cursor: pointer; 
-  font-size: 0.8rem; 
-  font-weight: bold; 
-  margin-left: 5px; 
-}
-.btn-micro:hover { 
-  text-decoration: underline; /* 작은 텍스트 버튼 클릭 인지도 상승 */
-}
-
-.preset-dropdown { 
-  width: 100%; 
-  padding: 12px; 
-  background: #1e1e1e; 
-  color: #fff; 
-  border: 1px solid #333; 
-  border-radius: 8px; 
-  outline: none; 
-  margin-top: 5px; 
-  cursor: pointer; 
-}
-
-/* 프리셋 목록 상단 레이아웃 (라벨 + 옵션창 수정 버튼 나란히 배치) */
-.preset-header-wrap {
-  display: flex;
+.icon-button svg { width: 20px; height: 20px; }
+.icon-button:hover { background: var(--input); color: var(--text); }
+.view { display: flex; flex-direction: column; gap: 12px; }
+.account-area {
+  min-height: 42px;
+  padding: 10px;
+  gap: 8px;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: 8px;
-}
-
-/* 프리셋 편집으로 넘어가는 링크형 버튼 */
-#editPresetBtn {
-  background: none;
-  border: none;
-  color: var(--accent);   /* 포인트 컬러(네온그린) 사용 */
-  cursor: pointer;
-  font-size: 0.85rem;
-  padding: 0;
-  text-decoration: underline;
-  transition: 0.2s;
-}
-
-#editPresetBtn:hover {
-  opacity: 0.8;
-}
-
-/* ★ 화이트 드롭다운을 다크 테마로 완벽하게 개조 (Custom Select) */
-#presetSelect {
-  width: 100%;
-  padding: 12px 16px;
-  background-color: #21262d; /* 다크 테마 배경 */
-  color: #f0f6fc;         /* 밝은 텍스트 */
-  border: 1px solid #30363d;
+  background: var(--surface);
   border-radius: 8px;
-  font-size: 0.95rem;
-  font-family: inherit;
-  cursor: pointer;
-  outline: none;
-  appearance: none;       /* 브라우저(OS) 기본의 못생긴 화살표와 스타일링 덮어쓰기 방지 */
-  -webkit-appearance: none;
-  
-  /* 커스텀 화살표 아이콘 (Data URI로 SVG를 직접 삽입하여 별도 이미지 파일 로드 방지 및 색상 통제) */
-  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23adbac7' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
-  background-repeat: no-repeat;
-  background-position: right 14px center; /* 화살표를 우측 여백에 맞춰 정렬 */
-  background-size: 16px;
-  transition: border-color 0.2s, box-shadow 0.2s;
 }
-
-#presetSelect:focus {
-  border-color: #27e2a4;
-  box-shadow: 0 0 0 2px rgba(39, 226, 164, 0.2); /* 포커스 시 접근성을 위한 링(Ring) 효과 */
+.account-identity { gap: 8px; min-width: 0; }
+#accountText { font-weight: 600; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.connection-status { display: inline-flex; align-items: center; gap: 5px; flex-shrink: 0; color: var(--muted); font-size: 11px; }
+.connection-status::before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+.connection-status.is-connected { color: var(--connected); }
+.account-button { padding: 2px 0; flex-shrink: 0; border: 0; border-radius: 2px; background: transparent; color: var(--muted); font-size: 11px; }
+.account-button:hover { color: var(--text); text-decoration: underline; text-underline-offset: 3px; }
+.section-heading { justify-content: space-between; gap: 8px; min-height: 20px; }
+h2, .setting-item label { font-size: 12px; font-weight: 550; color: var(--muted); }
+.tier-value { color: var(--text); font-size: 14px; font-weight: 650; font-variant-numeric: tabular-nums; }
+.tier-controls { --range-start: 51.724%; --range-end: 58.621%; }
+.multi-range-container { position: relative; height: 24px; margin: 4px 0 2px; }
+.slider-track { position: absolute; top: 10px; left: 8px; right: 8px; height: 4px; border-radius: 2px; background: var(--border); overflow: hidden; }
+.slider-selection { position: absolute; height: 100%; left: var(--range-start); right: calc(100% - var(--range-end)); background: var(--accent); }
+.dual-input { position: absolute; width: 100%; height: 24px; appearance: none; -webkit-appearance: none; pointer-events: none; background: transparent; margin: 0; }
+.dual-input::-webkit-slider-thumb { appearance: none; -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: var(--text); border: 2px solid var(--accent); pointer-events: auto; cursor: grab; }
+.dual-input::-moz-range-thumb { width: 12px; height: 12px; border-radius: 50%; background: var(--text); border: 2px solid var(--accent); pointer-events: auto; cursor: grab; }
+.dual-input:active::-webkit-slider-thumb { cursor: grabbing; background: var(--accent); }
+.dual-input:focus-visible { outline: none; z-index: 3; }
+.dual-input:focus-visible::-webkit-slider-thumb { outline: 2px solid var(--accent); outline-offset: 3px; }
+.dual-input:focus-visible::-moz-range-thumb { outline: 2px solid var(--accent); outline-offset: 3px; }
+.setting-item { display: flex; flex-direction: column; gap: 6px; }
+#presetSelect {
+  width: 100%; height: 38px; padding: 0 32px 0 11px;
+  border: 1px solid transparent; border-radius: 7px;
+  background-color: var(--input); color: var(--text); appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%2398A2B3' stroke-width='1.5'%3E%3Cpath d='m4 6 4 4 4-4'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 10px center; cursor: pointer; text-overflow: ellipsis;
 }
-
-/* 드롭다운 눌렀을 때 나오는 옵션 리스트들 다크 테마 강제 적용 */
-#presetSelect option {
-  background-color: #21262d;
-  color: #f0f6fc;
-}
+#presetSelect:hover { border-color: var(--border); }
+#presetSelect option { background: var(--input); color: var(--text); }
+.btn-main { width: 100%; min-height: 42px; padding: 10px 12px; border: 0; border-radius: 7px; background: var(--accent); color: #15181e; font-size: 13px; font-weight: 650; }
+#drawBtn { margin-top: 6px; } /* 12px section gap + 6px = 18px */
+.btn-main:hover { background: #58ebbc; }
+.btn-main:active { background: #1fc48e; }
+button:disabled { cursor: not-allowed; }
+.btn-main:disabled { background: var(--input); color: var(--muted); }
+.account-button:disabled { color: #687280; text-decoration: none; }
+#statusText { margin-top: 10px; padding: 9px 10px; background: var(--surface); border-radius: 6px; color: #d4b88a; font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; }
+#statusText:empty { display: none; }
+@media (prefers-reduced-motion: reduce) { button, select { transition: none; } }

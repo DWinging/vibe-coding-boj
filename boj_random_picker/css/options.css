@@ -1,19 +1,22 @@
 /* * BOJ Random Picker - Options Page Styles
- * Theme: GitHub Dark Dimmed Inspiration (눈의 피로도를 낮추는 다크 엠비언트 테마)
+ * Theme: 알고리즘 선택 페이지의 독립적인 다크·블루 팔레트
  * Architecture: CSS Variables 기반의 테마 시스템 및 Flex/Grid 하이브리드 레이아웃
  */
 
 :root {
   /* 컬러 팔레트 정의 (유지보수를 위한 변수화) */
-  --bg: #0d1117;              /* 메인 배경색 (Deep Dark) */
-  --card: #21262d;            /* 카드 및 컨테이너 배경색 */
-  --accent: #27e2a4;          /* 브랜드 포인트 컬러 (민트 그린) */
-  --border: #30363d;          /* 경계선 컬러 */
-  --text: #c9d1d9;            /* 기본 텍스트 컬러 */
-  --text-muted: #8b949e;      /* 보조 텍스트 컬러 (비활성화 또는 설명) */
-  --hover: rgba(39, 226, 164, 0.1); /* 호버 시 나타나는 은은한 포인트 배경 */
-  --danger: #f85149;          /* 삭제/경고 액션 컬러 */
-  --danger-hover: #ff7b72;    /* 삭제/경고 액션 호버 컬러 */
+  color-scheme: dark;
+  --bg: #15181e;
+  --card: #20242c;
+  --input: #2a3039;
+  --accent: #829ac4;
+  --border: #343b46;
+  --text: #f1f3f5;
+  --text-muted: #98a2b3;
+  --hover: #272d36;
+  --selected: #293548;
+  --danger: #c88e95;
+  --danger-hover: #e0a6ad;
 }
 
 /* --------------------------------------------------------
@@ -21,7 +24,6 @@
 ----------------------------------------------------------- */
 * {
   box-sizing: border-box; /* 패딩과 테두리를 너비에 포함시켜 레이아웃 계산 최적화 */
-  outline: none;          /* 기본 포커스 아웃라인 제거 (접근성은 커스텀 스타일로 대체 필요 시 추가) */
 }
 
 body, html {
@@ -51,8 +53,7 @@ body, html {
   position: sticky;       /* 스크롤 시 상단 고정 */
   top: 0;
   z-index: 100;           /* 태그 카드들보다 위로 올라오도록 z-index 설정 */
-  background: rgba(13, 17, 23, 0.95); /* 약간의 투명도 부여 */
-  backdrop-filter: blur(8px);         /* 뒤쪽 배경을 흐리게 처리 (Glassmorphism 효과) */
+  background: var(--bg);
   padding: 30px 20px 10px 20px;
   border-bottom: 1px solid var(--border);
 }
@@ -72,9 +73,9 @@ body, html {
 .search-wrapper input {
   width: 100%;
   padding: 16px 20px;
-  background: var(--card);
+  background: var(--input);
   border: 1px solid var(--border);
-  color: #fff;
+  color: var(--text);
   border-radius: 12px;
   font-size: 1.1rem;
   transition: border-color 0.2s; /* 부드러운 호버 트랜지션 */
@@ -94,9 +95,9 @@ body, html {
 .preset-builder input {
   flex: 1;
   padding: 16px;
-  background: var(--bg);
+  background: var(--input);
   border: 1px solid var(--border);
-  color: #fff;
+  color: var(--text);
   border-radius: 12px;
   font-size: 1rem;
 }
@@ -109,7 +110,7 @@ body, html {
 #savePresetBtn {
   padding: 0 24px;
   background: var(--accent);
-  color: #000;            /* 밝은 배경에 대비되는 어두운 텍스트 */
+  color: var(--bg);
   border: none;
   border-radius: 12px;
   font-weight: bold;
@@ -119,8 +120,7 @@ body, html {
 }
 
 #savePresetBtn:hover {
-  transform: translateY(-2px); /* 호버 시 살짝 떠오르는 입체감 */
-  opacity: 0.9;
+  background: #94abd0;
 }
 
 /* 선택 초기화 버튼 (보조 액션) */
@@ -137,9 +137,8 @@ body, html {
 }
 
 #resetBtn:hover {
-  background: #30363d;
-  color: #fff;
-  transform: translateY(-2px);
+  background: var(--input);
+  color: var(--text);
 }
 
 /* --------------------------------------------------------
@@ -166,21 +165,19 @@ body, html {
   white-space: nowrap;
   font-size: 0.9rem;
   font-weight: 600;
-  color: #fff;
+  color: var(--text);
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .preset-chip:hover {
-  border-color: var(--accent);
+  border-color: var(--border);
   background: var(--hover);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0,0,0,0.2); /* 공중에 떠 있는 듯한 그림자 효과 */
 }
 
 /* 칩 내부에 표시되는 선택된 태그 개수 */
 .preset-chip span.p-count {
-  color: var(--accent);
+  color: var(--text-muted);
   font-weight: normal;
   font-size: 0.8rem;
   pointer-events: none;   /* 클릭 이벤트가 텍스트에 걸리지 않도록 방지 */
@@ -188,7 +185,7 @@ body, html {
 
 /* 프리셋 삭제 버튼 (X 표시) */
 .del-btn {
-  color: var(--danger);
+  color: var(--text-muted);
   background: none;
   border: none;
   font-size: 1.2rem;
@@ -200,7 +197,6 @@ body, html {
 
 .del-btn:hover {
   color: var(--danger-hover);
-  transform: scale(1.1); /* 호버 시 아이콘 확대 */
 }
 
 /* --------------------------------------------------------
@@ -219,7 +215,7 @@ body, html {
 
 /* 개별 카테고리 박스 (ex: 자료구조, 그래프 등) */
 .category-section {
-  background: rgba(22, 27, 34, 0.5); /* 카드보다 약간 더 어둡게 처리하여 계층감 형성 */
+  background: var(--card);
   border-radius: 16px;
   padding: 20px;
   border: 1px solid var(--border);
@@ -239,32 +235,8 @@ body, html {
 .category-title {
   margin: 0;
   font-size: 1.15rem;
-  color: #f0f6fc;         /* 제목은 가장 밝은 색상으로 강조 */
+  color: var(--text);
   font-weight: bold;
-}
-
-/* 카테고리별 '전체 선택' 체크박스 라벨 */
-.select-all-label {
-  font-size: 0.9rem;
-  cursor: pointer;
-  color: var(--text-muted);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-weight: 600;
-  transition: color 0.2s;
-}
-
-.select-all-label:hover {
-  color: #fff;
-}
-
-.select-all-label input {
-  accent-color: var(--accent); /* 체크 시 기본 파란색 대신 브랜드 컬러(민트) 적용 */
-  width: 16px;
-  height: 16px;
-  cursor: pointer;
-  margin: 0;
 }
 
 /* --------------------------------------------------------
@@ -285,8 +257,8 @@ body, html {
   align-items: center;
   gap: 8px;
   padding: 8px 10px;
-  background: var(--card);
-  border: 1px solid var(--border);
+  background: transparent;
+  border: 1px solid transparent;
   border-radius: 8px;
   cursor: pointer;
   transition: 0.2s;
@@ -294,9 +266,8 @@ body, html {
 }
 
 .tag-card:hover {
-  border-color: var(--accent);
+  border-color: var(--border);
   background: var(--hover);
-  transform: translateY(-2px);
 }
 
 .tag-card span {
@@ -318,8 +289,8 @@ body, html {
 
 /* 체크박스가 선택되었을 때, 형제 요소인 텍스트(span)의 스타일 변경 */
 .tag-card input:checked + span {
-  color: var(--accent);
-  font-weight: bold;
+  color: var(--text);
+  font-weight: 600;
 }
 
 /* --------------------------------------------------------
@@ -336,6 +307,23 @@ body, html {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #4b5563;    /* 스크롤바 핸들 컬러 */
+  background: var(--border);
   border-radius: 10px;    /* 핸들 둥글게 처리 */
 }
+
+input::placeholder { color: var(--text-muted); opacity: 1; }
+button:focus-visible, input:focus-visible, .tag-card:has(input:focus-visible) {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+.tag-card:has(input:checked) {
+  background: var(--selected);
+  border-color: var(--accent);
+}
+.tag-card:has(input:disabled) {
+  opacity: .45;
+  cursor: not-allowed;
+  background: transparent;
+  border-color: transparent;
+}
+.tag-card input:disabled { cursor: not-allowed; }

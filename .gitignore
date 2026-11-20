@@ -1,0 +1,6 @@
+# Local credentials and Cloudflare development state (all subprojects).
+.env
+.env.*
+.dev.vars
+.dev.vars.*
+.wrangler/
