@@ -39,6 +39,7 @@ export async function handle(request, env, fetcher = fetch) {
   const finish = res => {
     // Service-binding responses may have immutable headers.
     const headers = new Headers(res.headers);
+    headers.set('Cache-Control', 'no-store');
     for (const [k,v] of Object.entries(cors)) headers.set(k,v);
     return new Response(res.body, { status: res.status, headers });
   };
@@ -98,7 +99,7 @@ export async function handle(request, env, fetcher = fetch) {
     await reserveBudget();
     const requestUpstream = async (url, options) => {
       let response;
-      try { response = await fetcher(url, options); }
+      try { response = await fetcher(url, { ...options, cache: 'no-store' }); }
       catch (error) {
         if (error.name === 'TimeoutError' || error.name === 'AbortError')
           throw fail('UPSTREAM_TIMEOUT', 'solved.ac 응답 시간이 초과되었습니다. 잠시 후 다시 시도해 주세요.', 504);

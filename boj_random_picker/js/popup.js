@@ -3,9 +3,9 @@ import { loadSettings, saveSettings } from './storage.js';
 import { buildQuery } from './protocol.js';
 const el = id => document.getElementById(id);
 let presets = {}, handle = null, busy = false;
-const buttons = ['drawBtn', 'connectBtn', 'disconnectBtn'];
+const buttons = ['drawBtn', 'connectBtn', 'disconnectBtn', 'confirmConnectBtn'];
 async function command(type, settings) {
-  const result = await chrome.runtime.sendMessage({ type, settings });
+  const result = await chrome.runtime.sendMessage({ type, settings, ...(type === 'connect' ? { consent: true } : {}) });
   if (!result?.ok) throw new Error(result?.error || '서비스 연결에 실패했습니다.');
   return result.data;
 }
@@ -53,7 +53,14 @@ el('drawBtn').onclick = () => run(async () => {
   buildQuery(settings, handle || '');
   await command('draw', settings);
 });
-el('connectBtn').onclick = () => run(async () => account(await command('connect')));
+el('connectBtn').onclick = () => {
+  if (!busy && !el('connectBtn').disabled) el('connectionDialog').showModal();
+};
+el('cancelConnectBtn').onclick = () => el('connectionDialog').close();
+el('confirmConnectBtn').onclick = () => {
+  el('connectionDialog').close();
+  return run(async () => account(await command('connect')));
+};
 el('disconnectBtn').onclick = () => run(async () => account(await command('disconnect')));
 el('settingsBtn').onclick = () => chrome.runtime.openOptionsPage();
 ['minTier', 'maxTier', 'presetSelect'].forEach(id => el(id).oninput = update);

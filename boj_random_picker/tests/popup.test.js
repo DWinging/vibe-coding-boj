@@ -8,9 +8,11 @@ test('popup UI preserves account, tier, presets, persistence, draw and error beh
   const source = await readFile(new URL('../js/popup.js', import.meta.url), 'utf8');
   const ids = [...html.matchAll(/id="([^"]+)"/g)].map(match => match[1]);
   const elements = Object.fromEntries(ids.map(id => [id, {
-    value: '', textContent: '', hidden: false, disabled: false, options: [],
+    value: '', textContent: '', hidden: false, disabled: false, open: false, options: [],
     attributes: {}, styles: {}, classes: new Set(),
     add(option) { this.options.push(option); },
+    showModal() { this.open = true; },
+    close() { this.open = false; },
     setAttribute(name, value) { this.attributes[name] = value; },
     style: { setProperty(name, value) { elements[id].styles[name] = value; } },
     classList: { toggle(name, enabled) { enabled ? elements[id].classes.add(name) : elements[id].classes.delete(name); } }
@@ -52,6 +54,7 @@ test('popup UI preserves account, tier, presets, persistence, draw and error beh
     assert.equal(elements.accountText.textContent, 'dong20');
     assert.equal(elements.connectionStatus.textContent, '연결됨');
     assert.equal(elements.connectBtn.hidden, true);
+    assert.equal(elements.connectionDialog.open, false);
     assert.equal(elements.disconnectBtn.hidden, false);
     assert.equal(elements.presetSelect.value, 'DP');
 
@@ -96,9 +99,23 @@ test('popup UI preserves account, tier, presets, persistence, draw and error beh
     assert.equal(elements.connectionStatus.textContent, '미연결');
     assert.equal(elements.accountText.hidden, true);
     assert.equal(elements.connectBtn.hidden, false);
+    assert.equal(elements.connectionDialog.open, false);
+    assert.match(html, /<dialog id="connectionDialog"[^>]+aria-describedby="connectionNotice sessionNotice"/);
+    assert.match(html, /<details class="privacy-notice privacy-details">\s*<summary>개인정보 안내<\/summary>/);
+    assert.match(html, /https:\/\/github.com\/DWinging\/vibe-coding-boj\/blob\/main\/PRIVACY.md/);
     assert.equal(elements.disconnectBtn.hidden, true);
-    await elements.connectBtn.onclick();
+    const requestCount = requests.length;
+    elements.connectBtn.onclick();
+    assert.equal(elements.connectionDialog.open, true);
+    assert.equal(requests.length, requestCount, 'opening disclosure must not start authentication');
+    elements.cancelConnectBtn.onclick();
+    assert.equal(elements.connectionDialog.open, false);
+    assert.equal(requests.length, requestCount, 'cancelling must not start authentication');
+    elements.connectBtn.onclick();
+    await elements.confirmConnectBtn.onclick();
+    assert.equal(requests.at(-1).type,'connect');assert.equal(requests.at(-1).consent,true);
     assert.equal(elements.connectionStatus.textContent, '연결됨');
+    assert.equal(elements.connectionDialog.open, false);
 
     failDraw = true;
     await elements.drawBtn.onclick();

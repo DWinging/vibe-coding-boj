@@ -112,6 +112,31 @@ test('OAuth enforces redirect and PKCE; selects allowed fields only',async()=>{
 test('RFC7009 empty revocation response accepted',async()=>{
  assert.equal((await handle(req('/oauth/revoke',{token:'refresh'}),env,async()=>new Response(null,{status:200}))).status,200);
 });
+
+test('OAuth responses and all exit paths are non-cacheable; upstream requests bypass caching',async()=>{
+ const res=await handle(req('/oauth/token',{grant_type:'refresh_token',refresh_token:'refresh'}),env,async(url,options)=>{
+  assert.equal(options.cache,'no-store');
+  return Response.json({access_token:'access',refresh_token:'rotated',expires_in:3600,extra:'private-upstream-field'});
+ });
+ assert.equal(res.headers.get('Cache-Control'),'no-store');
+ assert.deepEqual(await res.json(),{access_token:'access',refresh_token:'rotated',expires_in:3600});
+ const preflight=new Request('https://test.invalid/random',{method:'OPTIONS',headers:{Origin:'chrome-extension://'+id}});
+ for(const response of [await handle(preflight,env),await handle(req('/missing'),env),
+   await handle(new Request('https://test.invalid/config'),env)]) {
+  assert.equal(response.headers.get('Cache-Control'),'no-store');
+ }
+});
+
+test('upstream errors never echo credential canaries or request data',async()=>{
+ const canary='private-handle-token-code-body';
+ for(const fetcher of [async()=>{throw new Error(canary);},async()=>Response.json({error:{code:'UNKNOWN',message:canary},body:canary},{status:500}),
+   async()=>new Response(canary,{status:500})]) {
+  const response=await handle(req('/random',{min:1,max:5},canary),env,fetcher);
+  assert.equal(response.status,502);assert.ok(!(await response.text()).includes(canary));
+ }
+ const revoke=await handle(req('/oauth/revoke',{token:canary}),env,async()=>new Response(canary,{status:400}));
+ assert.equal(revoke.status,502);assert.ok(!(await revoke.text()).includes(canary));
+});
 test('missing storage binding is configuration failure, not network delay', async()=>{
  const res=await handle(req('/config'),{...env,BUDGET:undefined});
  assert.equal(res.status,503);

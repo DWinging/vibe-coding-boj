@@ -21,7 +21,7 @@ body {
 button, select, input { font: inherit; }
 button { cursor: pointer; }
 button, select { transition: background-color .15s, border-color .15s, color .15s; }
-button:focus-visible, select:focus-visible {
+button:focus-visible, select:focus-visible, a:focus-visible, summary:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 3px;
 }
@@ -62,6 +62,23 @@ h1 { font-size: 15px; font-weight: 650; letter-spacing: -.3px; white-space: nowr
 .connection-status.is-connected { color: var(--connected); }
 .account-button { padding: 2px 0; flex-shrink: 0; border: 0; border-radius: 2px; background: transparent; color: var(--muted); font-size: 11px; }
 .account-button:hover { color: var(--text); text-decoration: underline; text-underline-offset: 3px; }
+.privacy-notice { color: var(--muted); font-size: 11px; line-height: 1.5; overflow-wrap: anywhere; }
+.privacy-notice a, .privacy-link { color: var(--accent); text-underline-offset: 2px; }
+.privacy-details summary { width: fit-content; cursor: pointer; }
+.privacy-details p { margin-top: 6px; }
+#connectionDialog {
+  width: calc(100% - 32px); max-height: calc(100% - 24px); margin: auto; padding: 16px;
+  overflow-y: auto; border: 1px solid var(--border); border-radius: 10px;
+  background: var(--surface); color: var(--text); font: inherit;
+}
+#connectionDialog::backdrop { background: rgb(0 0 0 / 65%); }
+#connectionDialog h2 { color: var(--text); font-size: 14px; font-weight: 650; }
+#connectionDialog p { margin-top: 10px; line-height: 1.6; }
+.privacy-link { display: inline-block; margin-top: 10px; font-size: 11px; }
+.dialog-actions { display: flex; gap: 8px; margin-top: 14px; }
+.dialog-actions .btn-main { flex: 1; width: auto; font-size: 12px; }
+.dialog-cancel { padding: 8px 14px; border: 1px solid var(--border); border-radius: 7px; background: var(--input); color: var(--text); }
+.dialog-cancel:hover { background: var(--border); }
 .section-heading { justify-content: space-between; gap: 8px; min-height: 20px; }
 h2, .setting-item label { font-size: 12px; font-weight: 550; color: var(--muted); }
 .tier-value { color: var(--text); font-size: 14px; font-weight: 650; font-variant-numeric: tabular-nums; }
