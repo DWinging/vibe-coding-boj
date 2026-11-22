@@ -9,29 +9,70 @@ const req = (path, body = {}, token) => new Request('https://test.invalid' + pat
  headers: { Origin: 'chrome-extension://' + id, 'Content-Type': 'application/json', ...(token ? { Authorization: 'Bearer ' + token } : {}) },
  body: JSON.stringify(body) });
 test('query keeps tag OR and explicit unsolved ID; rejects injection and budgets', () => {
- assert.equal(buildQuery({min:11,max:15,tags:['dp','math','dp']},'alice'), '*11..15 %ko -@alice (#dp|#math)');
+ assert.equal(buildQuery({min:11,max:15,tags:['dp','math','dp']},'alice'), '*11..15 s#2000.. -@alice (#dp|#math)');
  for (const input of [{min:30,max:1}, {min:1,max:30,tags:['dp|id:1']}, {min:1,max:30,tags:Array.from({length:8},(_,i)=>'tag'+i)}, {min:1,max:30,tags:['a'.repeat(100)]}])
    assert.throws(()=>buildQuery(input,'alice'));
 });
-test('Korean filter applies to anonymous and signed-in searches and counts against budget', () => {
+test('solved-user filter replaces language filter and allows five tags with an account', () => {
  const tags=Array.from({length:5},(_,i)=>'tag'+i);
- assert.equal(buildQuery({min:1,max:30,tags:[]}), '*1..30 %ko');
- assert.match(buildQuery({min:1,max:30,tags},'alice'), / %ko -@alice /);
+ assert.equal(buildQuery({min:1,max:30,tags:[]}), '*1..30 s#2000..');
+ for (const threshold of [2000,1000,500,0]) {
+   const q=buildQuery({min:1,max:30,tags},'alice',threshold);
+   assert.equal(q,'*1..30'+(threshold?' s#'+threshold+'..':'')+' -@alice (#tag0|#tag1|#tag2|#tag3|#tag4)');
+   assert.ok(!q.includes('%ko'));
+ }
+ for (const threshold of [-1,200,'2000',NaN]) assert.throws(()=>buildQuery({min:1,max:30},'',threshold));
  assert.throws(()=>buildQuery({min:1,max:30,tags:[...tags,'tag5']},'alice'));
  assert.throws(()=>buildQuery({min:1,max:30,tags:[...tags,'tag5']}), /알고리즘은 최대 5개 까지 선택 가능합니다\./);
 });
-test('Worker always sends Korean condition and does not retry without it on no match',async()=>{
+test('empty searches relax only solved-user count in order, including zero for Ruby',async()=>{
  for (const token of [undefined,'user-token']) {
-   let searches=0;
-   const res=await handle(req('/random',{min:1,max:5,tags:['dp']},token),env,async(url)=>{
+   const queries=[];
+   let reservations=0;
+   const quota={...env,BUDGET:{idFromName:x=>x,get:()=>({fetch:async()=>{reservations++;return Response.json({});}})}};
+   const res=await handle(req('/random',{min:26,max:30,tags:['dp','math','graphs','trees','string']},token),quota,async(url)=>{
      if(url.endsWith('/me')) return Response.json({id:1,handle:'alice'});
-     const q=new URL(url).searchParams.get('q');
-     assert.equal(q,token?'*1..5 %ko -@alice (#dp)':'*1..5 %ko (#dp)');
-     searches++;
+     queries.push(new URL(url).searchParams.get('q'));
+     if (queries.length===4) return Response.json({problemId:1000,judgeIds:[{ojId:'boj',problemId:'1000'}]});
      return Response.json({error:{code:'NOT_FOUND'}},{status:404});
    });
-   assert.equal(res.status,404);assert.equal(searches,1);
+   assert.equal(res.status,200);assert.equal(reservations,4);
+   assert.deepEqual(queries,[2000,1000,500,0].map(n=>'*26..30'+(n?' s#'+n+'..':'')+(token?' -@alice':'')+' (#dp|#math|#graphs|#trees|#string)'));
  }
+});
+
+test('recommendation stops at the first threshold with a matching problem',async()=>{
+ for (const successAt of [1,2,3]) {
+   let searches=0;
+   const res=await handle(req('/random',{min:11,max:15}),env,async()=>{
+     searches++;
+     return searches===successAt?Response.json({problemId:1000,judgeIds:[{ojId:'boj',problemId:'1000'}]}):
+       Response.json({error:{code:'NOT_FOUND'}},{status:404});
+   });
+   assert.equal(res.status,200);assert.equal(searches,successAt);
+ }
+});
+
+test('errors at a lower threshold stop immediately instead of relaxing further',async()=>{
+ for (const status of [400,401,403,429,500]) {
+   let searches=0;
+   const res=await handle(req('/random',{min:11,max:15}),env,async()=>{
+     searches++;
+     return searches===1?Response.json({error:{code:'NOT_FOUND'}},{status:404}):
+       Response.json({error:{code:'FAILURE'}},{status,headers:{'Retry-After':'90'}});
+   });
+   assert.equal(searches,2);assert.notEqual(res.status,200);
+   if(status===429) assert.equal(res.headers.get('Retry-After'),'90');
+ }
+});
+
+test('budget rejection stops threshold relaxation before another search',async()=>{
+ let searches=0, reservations=0;
+ const quota={...env,BUDGET:{idFromName:x=>x,get:()=>({fetch:async()=>{
+   reservations++;return reservations===1?Response.json({}):Response.json({error:{code:'RATE_LIMITED'}},{status:429});
+ }})}};
+ const res=await handle(req('/random',{min:1,max:5}),quota,async()=>{searches++;return Response.json({error:{code:'NOT_FOUND'}},{status:404});});
+ assert.equal(res.status,429);assert.equal(searches,1);assert.equal(reservations,2);
 });
 test('Retry-After supports seconds and HTTP date', () => {
  assert.equal(retrySeconds('120'),120);
@@ -68,7 +109,7 @@ test('missing BOJ mappings trigger bounded re-pick with unchanged filters and pe
  const res=await handle(req('/random',{min:11,max:15,tags:['dp']},'user-token'),quota,async url=>{
    if(url.endsWith('/me')){me++;return Response.json({id:1,handle:'alice'});}
    searches++;
-   assert.equal(new URL(url).searchParams.get('q'),'*11..15 %ko -@alice (#dp)');
+   assert.equal(new URL(url).searchParams.get('q'),'*11..15 s#2000.. -@alice (#dp)');
    return Response.json(searches<3?{problemId:1000,judgeIds:searches===1?[]:[{ojId:'other',problemId:'1000'}]}:
      {problemId:19759,level:15,judgeIds:[{ojId:'boj',problemId:'28955'}]});
  });
@@ -79,6 +120,30 @@ test('three non-BOJ results stop without inventing a BOJ URL',async()=>{
  let calls=0;
  const res=await handle(req('/random',{min:1,max:5}),env,async()=>{calls++;return Response.json({problemId:1000,judgeIds:[]});});
  assert.equal(calls,3);assert.equal(res.status,404);assert.equal((await res.json()).error.code,'NO_BOJ_MATCH');
+});
+
+test('BOJ mapping retries after relaxation retain the zero threshold and stay bounded',async()=>{
+ let searches=0, reservations=0;
+ const queries=[];
+ const quota={...env,BUDGET:{idFromName:x=>x,get:()=>({fetch:async()=>{reservations++;return Response.json({});}})}};
+ const res=await handle(req('/random',{min:26,max:30}),quota,async url=>{
+   queries.push(new URL(url).searchParams.get('q'));
+   return ++searches<=3?Response.json({error:{code:'NOT_FOUND'}},{status:404}):Response.json({problemId:1000,judgeIds:[]});
+ });
+ assert.equal(res.status,404);assert.equal((await res.json()).error.code,'NO_BOJ_MATCH');
+ assert.equal(searches,6);assert.equal(reservations,6);
+ assert.deepEqual(queries,['*26..30 s#2000..','*26..30 s#1000..','*26..30 s#500..','*26..30','*26..30','*26..30']);
+});
+
+test('interleaved empty and unmapped results share the mapping retry limit',async()=>{
+ const queries=[];
+ const res=await handle(req('/random',{min:26,max:30}),env,async url=>{
+   queries.push(new URL(url).searchParams.get('q'));
+   return queries.length%2===0?Response.json({error:{code:'NOT_FOUND'}},{status:404}):
+     Response.json({problemId:1000,judgeIds:[]});
+ });
+ assert.equal(res.status,404);assert.equal((await res.json()).error.code,'NO_BOJ_MATCH');
+ assert.deepEqual(queries,['*26..30 s#2000..','*26..30 s#2000..','*26..30 s#1000..','*26..30 s#1000..','*26..30 s#500..']);
 });
 test('429 during re-pick immediately stops and preserves Retry-After',async()=>{
  let calls=0;
@@ -173,7 +238,9 @@ test('development and store origins get separate registered redirects', async()=
  assert.ok(!JSON.stringify(error).includes('test-secret'));
 });
 test('404, disallowed origin, and oversized bodies handled',async()=>{
- assert.equal((await handle(req('/random',{min:1,max:5}),env,async()=>Response.json({error:{code:'NOT_FOUND'}},{status:404}))).status,404);
+ let searches=0;
+ const empty=await handle(req('/random',{min:1,max:5}),env,async()=>{searches++;return Response.json({error:{code:'NOT_FOUND'}},{status:404});});
+ assert.equal(empty.status,404);assert.equal((await empty.json()).error.code,'NO_MATCH');assert.equal(searches,4);
  assert.equal((await handle(new Request('https://test.invalid/config',{method:'POST'}),env)).status,403);
  assert.equal((await handle(req('/random',{payload:'x'.repeat(20000)}),env)).status,413);
 });

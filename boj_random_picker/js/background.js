@@ -21,7 +21,8 @@ async function call(path, body, token) {
   if (Date.now() < blockedUntil) throw new Error(Math.ceil((blockedUntil - Date.now()) / 1000) + '초 후 다시 시도해 주세요.');
   const res = await fetch(WORKER_URL.replace(/\/$/, '') + path, {
     method: 'POST', headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: 'Bearer ' + token } : {}) },
-    body: JSON.stringify(body || {}), credentials: 'omit', redirect: 'error', signal: AbortSignal.timeout(20000)
+    // /random can make /me + up to six searches (three empty tiers + three BOJ mapping attempts).
+    body: JSON.stringify(body || {}), credentials: 'omit', redirect: 'error', signal: AbortSignal.timeout(path === '/random' ? 75000 : 20000)
   });
   const text = await res.text();
   if (res.status === 429) {

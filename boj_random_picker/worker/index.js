@@ -1,4 +1,4 @@
-import { buildQuery, retrySeconds, bojProblemId } from '../js/protocol.js';
+import { buildQuery, retrySeconds, bojProblemId, SOLVED_USER_THRESHOLDS } from '../js/protocol.js';
 const json = (data, status = 200, headers = {}) => Response.json(data, { status, headers: { 'Cache-Control': 'no-store', ...headers } });
 const fail = (code, message, status = 400, headers) => json({ error: { code, message } }, status, headers);
 export class ApiBudget {
@@ -15,7 +15,7 @@ export class ApiBudget {
       }
       state.tokens = Math.min(60, state.tokens + Math.max(0, now - state.at) / 1000 * 2);
       state.at = now;
-      // Worst case per recommendation: /me (1) + problem search (3).
+      // Reserve /me (1) + one search (3); every extra search reserves again.
       const wait = Math.max((state.blocked - now) / 1000, (4 - state.tokens) / 2);
       if (wait > 0) return fail('RATE_LIMITED', '요청이 많습니다. 잠시 후 다시 시도해 주세요.', 429, { 'Retry-After': String(Math.ceil(wait)) });
       state.tokens -= 4;
@@ -153,18 +153,29 @@ export async function handle(request, env, fetcher = fetch) {
     let user = null;
     if (auth) user = await upstream('/me', 'GET', null, auth);
     if (path === '/me') return finish(json({ handle: user.handle }));
-    const q = buildQuery(body, user?.handle || '');
     // Search currently has no user scope: use an explicit handle, not $me.
-    // Keep all filters; retry only successful results without a BOJ mapping.
-    // Each additional search reserves its own quota and respects the global cooldown.
-    for (let attempt = 0; attempt < 3; attempt++) {
-      if (attempt > 0) await reserveBudget();
-      const p = await upstream('/search/random-problem?q=' + encodeURIComponent(q));
-      const number = bojProblemId(p);
-      if (number) return finish(json({ problemId: p.problemId, subId: p.subId, level: p.level,
-        judgeIds: [{ ojId: 'boj', problemId: number }] }));
+    // Only an empty search relaxes the solved-user threshold. Other filters stay.
+    // Allow at most three unmapped results across all thresholds (six searches total).
+    let searches = 0, unmapped = 0;
+    for (const minSolved of SOLVED_USER_THRESHOLDS) {
+      const q = buildQuery(body, user?.handle || '', minSolved);
+      while (true) {
+        if (searches++ > 0) await reserveBudget();
+        let p;
+        try {
+          p = await upstream('/search/random-problem?q=' + encodeURIComponent(q));
+        } catch (error) {
+          if (!(error instanceof Response) || error.status !== 404 ||
+              (await error.clone().json()).error?.code !== 'NO_MATCH') throw error;
+          if (minSolved === 0) throw error;
+          break;
+        }
+        const number = bojProblemId(p);
+        if (number) return finish(json({ problemId: p.problemId, subId: p.subId, level: p.level,
+          judgeIds: [{ ojId: 'boj', problemId: number }] }));
+        if (++unmapped >= 3) return finish(fail('NO_BOJ_MATCH', '이번 검색에서 백준에 연결된 문제를 찾지 못했습니다. 다시 추천하거나 조건을 바꿔 주세요.', 404));
+      }
     }
-    return finish(fail('NO_BOJ_MATCH', '이번 검색에서 백준에 연결된 문제를 찾지 못했습니다. 다시 추천하거나 조건을 바꿔 주세요.', 404));
   } catch (error) {
     if (error instanceof Response) return finish(error);
     if (error instanceof SyntaxError) return finish(fail('INPUT', '요청 형식이 올바르지 않습니다.'));

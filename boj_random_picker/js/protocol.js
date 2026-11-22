@@ -1,12 +1,14 @@
 export const MAX_ALGORITHM_TAGS = 5;
 export const TAG_LIMIT_MESSAGE = '알고리즘은 최대 5개 까지 선택 가능합니다.';
-export function buildQuery({ min, max, tags = [] }, handle = '') {
+export const SOLVED_USER_THRESHOLDS = Object.freeze([2000, 1000, 500, 0]);
+export function buildQuery({ min, max, tags = [] }, handle = '', minSolved = SOLVED_USER_THRESHOLDS[0]) {
   if (!Number.isInteger(min) || !Number.isInteger(max) || min < 1 || max > 30 || min > max) throw new Error('티어 범위를 확인해 주세요.');
   if (!Array.isArray(tags) || tags.some(t => typeof t !== 'string' || !/^[a-z0-9_]+$/.test(t))) throw new Error('유효하지 않은 태그입니다.');
   if (handle && !/^[a-zA-Z0-9_]+$/.test(handle)) throw new Error('사용자 ID 형식을 확인해 주세요.');
+  if (!SOLVED_USER_THRESHOLDS.includes(minSolved)) throw new Error('푼 사람 수 기준을 확인해 주세요.');
   const unique = [...new Set(tags)];
-  if (unique.length > MAX_ALGORITHM_TAGS || 2 + (handle ? 1 : 0) + unique.length > 8) throw new Error(TAG_LIMIT_MESSAGE);
-  const q = '*' + min + '..' + max + ' %ko' + (handle ? ' -@' + handle : '') +
+  if (unique.length > MAX_ALGORITHM_TAGS || 1 + (minSolved > 0 ? 1 : 0) + (handle ? 1 : 0) + unique.length > 8) throw new Error(TAG_LIMIT_MESSAGE);
+  const q = '*' + min + '..' + max + (minSolved > 0 ? ' s#' + minSolved + '..' : '') + (handle ? ' -@' + handle : '') +
     (unique.length ? ' (' + unique.map(t => '#' + t).join('|') + ')' : '');
   if (q.length > 100) throw new Error('검색 조건이 100자를 넘습니다. 태그 수를 줄여 주세요.');
   return q;
